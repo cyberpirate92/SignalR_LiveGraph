@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>SignalR Real time graph</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/chartist.js/latest/chartist.min.css">
+    <script src="//cdn.jsdelivr.net/chartist.js/latest/chartist.min.js"></script>
+
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@aspnet/signalr@1.0.0/dist/browser/signalr.min.js"></script>
+</head>
+<body>
+    <div>
+        <label> Enter a value </label>
+        <input type="text" id="datapoint">
+        <button id="submitBtn">Add</button>
+        <button id="randomValueBtn">Add Random</button>
+    </div>
+    <div id="chartArea">
+    </div>
+</body>
+<script>
+
+    var lineChart = new Chartist.Line('#chartArea', {
+        labels: [],
+        series: [[]]
+    }, 
+    {
+        low: 0,
+        showArea: true
+    });
+    
+    var connection = new signalR.HubConnectionBuilder().withUrl("/graphHub").build();
+
+    connection.on("ReceiveValue", (value) => {
+        lineChart.data.series[0].push(value);    
+        lineChart.update();
+    });
+
+    connection.start();
+
+    var sendValue = async function(value) {
+        await connection.invoke("SendValue", value);
+    };
+
+    $("#submitBtn").on("click", () => {
+        const value = $("#datapoint").val();
+        if (value && !isNaN(value)) {
+            sendValue(value);
+            $("#datapoint").val("");    
+        }
+    });
+
+    $("#randomValueBtn").on("click", () => {
+        const value = Math.floor((Math.random() * 1000) % 100);
+        sendValue(value);
+    });
+
+</script>
+</html>
